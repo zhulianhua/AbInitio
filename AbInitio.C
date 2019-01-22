@@ -161,7 +161,7 @@ Foam::AbInitio::AbInitio
             word componentQ = cloud.typeIdList()[i];
             AImatrixs_[j].set(i, new AbInitioMatrix(cloud, coeffDict_.subDict(componentP+'-'+componentQ)));
             // the symmetry list element
-            if (i > j) AImatrixs_[i].set(j, new AbInitioMatrix(cloud, coeffDict_.subDict(componentQ+'-'+componentP)));
+            if (i > j) AImatrixs_[i].set(j, new AbInitioMatrix(cloud, coeffDict_.subDict(componentP+'-'+componentQ)));
         }
     }
 }
