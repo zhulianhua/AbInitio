@@ -40,33 +40,25 @@ namespace Foam
 };
 
 
-Foam::AbInitio::AbInitioMatrix
+Foam::AbInitio::AbInitioMatrix::AbInitioMatrix
 (
+    dsmcCloud& cloud,
     const dictionary& dict
 )
 :
-
-
-Foam::AbInitio::AbInitio
-(
-    const dictionary& dict,
-    dsmcCloud& cloud
-)
-:
-    BinaryCollisionModel(dict, cloud),
-    coeffDict_(dict.subDict(typeName + "Coeffs")),
-    deflectionAngleTableFileName_(coeffDict_.lookup("deflectionAngleTableFileName")),
-    numRows_(readLabel(coeffDict_.lookup("numRows"))),
-    numColumns_(readLabel(coeffDict_.lookup("numColumns"))),
-    G_(readScalar(coeffDict_.lookup("G"))),
-    separator_(coeffDict_.lookupOrDefault<string>("separator",string(","))[0])
+    cloud_(cloud),
+    deflectionAngleCosinTableFileName_(dict.lookup("deflectionAngleCosinTableFileName")),
+    numRows_(readLabel(dict.lookup("numRows"))),
+    numColumns_(readLabel(dict.lookup("numColumns"))),
+    G_(readScalar(dict.lookup("G"))),
+    separator_(dict.lookupOrDefault<string>("separator",string(","))[0])
 {
     // allocate the memory
-    deflectionAngleTable_.setSize(numRows_*numColumns_);
+    deflectionAngleCosinTable_.setSize(numRows_*numColumns_);
     sigmaTtable_.setSize(numRows_);
 
     // read the tables
-    IFstream in(cloud.time().constant()/deflectionAngleTableFileName_);
+    IFstream in(cloud.time().constant()/deflectionAngleCosinTableFileName_);
 
     // records the current line in the table
     label lines = 0;
@@ -102,7 +94,7 @@ Foam::AbInitio::AbInitio
         // first numColumns are deflection angles
         for (label i=0; i < numColumns_; i++)
         {
-            deflectionAngleTable_[lines*numColumns_ + i] =
+            deflectionAngleCosinTable_[lines*numColumns_ + i] =
                  readScalar(IStringStream(splitted[i])());
         }
 
@@ -111,6 +103,66 @@ Foam::AbInitio::AbInitio
 
         // next line ready
         lines += 1;
+    }
+}
+
+inline Foam::scalar Foam::AbInitio::AbInitioMatrix::deflectionAngleCosin ( Foam::scalar cR) const
+{
+    Random& rndGen(cloud_.rndGen());
+    label row = deflectionAngleRow(cR);
+    label col = rndGen.integer(1,numColumns_);
+    // lookup table
+    return deflectionAngleCosinTable_[row*numColumns_ + col - 1];
+}
+
+inline Foam::scalar Foam::AbInitio::AbInitioMatrix::sigmaT ( Foam::scalar cR) const
+{
+    label row = deflectionAngleRow(cR);
+    return sigmaTtable_[row];
+}
+
+inline Foam::label Foam::AbInitio::AbInitioMatrix::deflectionAngleRow(Foam::scalar cR) const
+{
+    Foam::label j = floor(log(1+cR/G_)/log(1.005) + 0.5);
+    if (j>numRows_) j = numRows_;
+    return j - 1;
+}
+
+Foam::AbInitio::AbInitio
+(
+    const dictionary& dict,
+    dsmcCloud& cloud
+)
+:
+    BinaryCollisionModel(dict, cloud),
+    coeffDict_(dict.subDict(typeName + "Coeffs"))
+{
+    label nComponents = cloud.typeIdList().size();
+    // set the list size
+    AImatrixs_.setSize(nComponents);
+
+    for(label i = 0; i < nComponents; i++)
+    {
+        AImatrixs_.set(i, new PtrList<AbInitioMatrix>);
+    }
+
+    // set the sub list size
+    for(label i = 0; i < nComponents; i++)
+    {
+        AImatrixs_[i].setSize(nComponents);
+    }
+
+    // construct the matrixs
+    for(label j = 0; j < nComponents; j++)
+    {
+        for(label i = j; i < nComponents; i++)
+        {
+            word componentP = cloud.typeIdList()[j];
+            word componentQ = cloud.typeIdList()[i];
+            AImatrixs_[j].set(i, new AbInitioMatrix(cloud, coeffDict_.subDict(componentP+'-'+componentQ)));
+            // the symmetry list element
+            if (i > j) AImatrixs_[i].set(j, new AbInitioMatrix(cloud, coeffDict_.subDict(componentQ+'-'+componentP)));
+        }
     }
 }
 
@@ -130,38 +182,18 @@ bool Foam::AbInitio::active() const
 }
 
 
-
 Foam::scalar Foam::AbInitio::sigmaTcR
 (
     const dsmcParcel& pP,
     const dsmcParcel& pQ
 ) const
 {
-//     const dmscCloud& cloud(this->owner());
-
-
-//     if(typeIdP == 1 && typeIdQ == 0)
-//     {
-//         omegaPQ = 0.725;
-//     }
-//     
-//     if(typeIdP == 0 && typeIdQ == 1)
-//     {
-//         omegaPQ = 0.725;
-//     }
-
+    label typeIdP = pP.typeId();
+    label typeIdQ = pQ.typeId();
 
     scalar cR = mag(pP.U() - pQ.U());
 
-    if (cR < VSMALL)
-    {
-        return 0;
-    }
-
-    // lookup table
-    label row = deflectionAngleRow(cR); 
-    scalar sigmaTPQ = sigmaTtable_[row];
-    return sigmaTPQ*cR;
+    return AImatrixs_[typeIdP][typeIdQ].sigmaT(cR)*cR;
 }
 
 void Foam::AbInitio::collide
@@ -171,25 +203,11 @@ void Foam::AbInitio::collide
     label& cellI
 )
 {
-//     dsmcCloud& cloud_(this->owner());
-
     label typeIdP = pP.typeId();
     label typeIdQ = pQ.typeId();
     vector& UP = pP.U();
     vector& UQ = pQ.U();
     
-//     if(typeIdP == 1 && typeIdQ == 0)
-//     {
-//         alphaPQ = 1.0/1.64;
-//     }
-//     
-//     if(typeIdP == 0 && typeIdQ == 1)
-//     {
-//         alphaPQ = 1.0/1.64;
-//     }
-    
-//     Info << "alphaPQ = " << alphaPQ << endl;
-        
     scalar collisionSeparation = sqrt(
             sqr(pP.position().x() - pQ.position().x()) +
             sqr(pP.position().y() - pQ.position().y())
@@ -211,15 +229,7 @@ void Foam::AbInitio::collide
     
     vector cRComponents = UP - UQ;
 
-    label row = deflectionAngleRow(cR); 
-    label col = rndGen.integer(1,numColumns_);
-    // lookup table
-    scalar cosTheta = deflectionAngleTable_[row*numColumns_ + col - 1];
-
-// lhzhu: we needs to lookup theta from the pre-stored matrix based on cR
-    // store the matrix as a run time constructed properties of the collision model
-
-    //scalar cosTheta = 2.0*(pow(rndGen.scalar01(),(1.0/alphaPQ))) - 1.0;
+    scalar cosTheta = AImatrixs_[typeIdP][typeIdQ].deflectionAngleCosin(cR);
     scalar sinTheta = sqrt(1.0 -cosTheta*cosTheta);
 
     scalar phi = twoPi*rndGen.scalar01();
@@ -288,9 +298,7 @@ const Foam::dictionary& Foam::AbInitio::coeffDict() const
 // ************************************************************************* //
 //
 
-Foam::label Foam::AbInitio::deflectionAngleRow(Foam::scalar cR) const
+const Foam::AbInitio::AbInitioMatrix& Foam::AbInitio::AImatrixs(label j, label i) const
 {
-    Foam::label j = floor(log(1+cR/G_)/log(1.005) + 0.5);
-    if (j>numRows_) j = numRows_;
-    return j - 1;
+    return AImatrixs_[j][i];
 }

@@ -49,31 +49,45 @@ class AbInitio
 {
     // Private data
     //
-        class AbInitioMatrix :
+public:
+        class AbInitioMatrix
         {
             // priviate
-            const word deflectionAngleTableFileName_;
+            dsmcCloud& cloud_;
+            const word deflectionAngleCosinTableFileName_;
             const label numRows_;
             const label numColumns_;
             const scalar G_;
             const char separator_;
+
+            // store the deflection angle cosin table 2D
+            scalarField deflectionAngleCosinTable_;
+
+            // store the sigmaT table
+            scalarField sigmaTtable_;
+
+            // determin the row based on the relative velocity
+            label deflectionAngleRow(scalar cR) const;
         public:
-            AbInitioMatrix(const IOdictionary& dict);
-        }
+            // Constructor from dict
+
+            AbInitioMatrix(dsmcCloud& cloud, const dictionary& dict);
+
+            // Get the cosin value of the deflection angle
+            //  based on the relatvie velocity
+            inline scalar deflectionAngleCosin(scalar cR) const;
+
+            // Get the total cross section
+            //  based on the relatvie velocity
+            inline scalar sigmaT(scalar cR) const;
+
+            inline bool okToDelete() const {return true;}
+        };
 
         //- The coefficients dictionary
         const dictionary coeffDict_;
 
-        List<word> deflectionAngleTableFileNames_;
-
-        // store the deflection angle table 2D
-        scalarField deflectionAngleTable_;
-        // store the total cross section angle 1D
-        scalarField sigmaTtable_;
-        label numRows_;
-        label numColumns_;
-        scalar G_;
-        const char separator_;
+        PtrList<PtrList<AbInitioMatrix>> AImatrixs_;
 
 public:
 
@@ -118,6 +132,8 @@ public:
         const dictionary& coeffDict() const;
 
         label deflectionAngleRow(scalar cR) const;
+
+        const AbInitioMatrix& AImatrixs(label j, label i) const;
 };
 
 
