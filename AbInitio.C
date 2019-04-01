@@ -27,6 +27,7 @@ License
 #include "constants.H"
 #include "addToRunTimeSelectionTable.H"
 #include "IFstream.H"
+#include "Switch.H"
 
 using namespace Foam::constant::mathematical;
 
@@ -51,7 +52,8 @@ Foam::AbInitio::AbInitioMatrix::AbInitioMatrix
     numRows_(readLabel(dict.lookup("numRows"))),
     numColumns_(readLabel(dict.lookup("numColumns"))),
     G_(readScalar(dict.lookup("G"))),
-    separator_(dict.lookupOrDefault<string>("separator",string(","))[0])
+    separator_(dict.lookupOrDefault<string>("separator",string(","))[0]),
+    useInterpolatedSigmaT_(dict.lookupOrDefault<Switch>("useInterpolatedSigmaT", false))
 {
     // allocate the memory
     deflectionAngleCosinTable_.setSize(numRows_*numColumns_);
@@ -117,8 +119,20 @@ inline Foam::scalar Foam::AbInitio::AbInitioMatrix::deflectionAngleCosin ( Foam:
 
 inline Foam::scalar Foam::AbInitio::AbInitioMatrix::sigmaT ( Foam::scalar cR) const
 {
-    label row = deflectionAngleRow(cR);
-    return sigmaTtable_[row];
+    if(useInterpolatedSigmaT_) {
+        label rowA, rowB;
+        deflectionAngleRowBetween(cR, rowA, rowB);
+        // recover the original cRA and cRB
+        // NOTE: can be pre-stored also in that matrix
+        scalar cRA = G_*(pow(1.005, rowA+1)-1.0);
+        scalar cRB = G_*(pow(1.005, rowB+1)-1.0);
+        return (cR - cRB)*(sigmaTtable_[rowA] - sigmaTtable_[rowB])/(cRA - cRB)
+            + sigmaTtable_[rowB];
+    }
+    else{
+        label row = deflectionAngleRow(cR);
+        return sigmaTtable_[row];
+    }
 }
 
 inline Foam::label Foam::AbInitio::AbInitioMatrix::deflectionAngleRow(Foam::scalar cR) const
@@ -126,6 +140,21 @@ inline Foam::label Foam::AbInitio::AbInitioMatrix::deflectionAngleRow(Foam::scal
     Foam::label j = floor(log(1+cR/G_)/log(1.005) + 0.5);
     if (j>numRows_) j = numRows_;
     return j - 1;
+}
+
+void Foam::AbInitio::AbInitioMatrix::deflectionAngleRowBetween(Foam::scalar cR, Foam::label& rowA, Foam::label& rowB) const
+{
+    Foam::label jb = floor(log(1+cR/G_)/log(1.005) + 0.5);
+    Foam::label ja = jb+1;
+
+    if (jb>numRows_) 
+    {
+        ja = numRows_;
+        jb = numRows_;
+    }
+
+    rowA =  ja-1;
+    rowB =  jb-1;
 }
 
 Foam::AbInitio::AbInitio
@@ -164,6 +193,7 @@ Foam::AbInitio::AbInitio
             if (i > j) AImatrixs_[i].set(j, new AbInitioMatrix(cloud, coeffDict_.subDict(componentP+'-'+componentQ)));
         }
     }
+
 }
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //

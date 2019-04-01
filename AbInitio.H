@@ -66,8 +66,13 @@ public:
             // store the sigmaT table
             scalarField sigmaTtable_;
 
+            //- 
+            Switch useInterpolatedSigmaT_;
+
             // determin the row based on the relative velocity
             label deflectionAngleRow(scalar cR) const;
+            void deflectionAngleRowBetween(Foam::scalar cR, Foam::label& rowA, Foam::label& rowB) const;
+
         public:
             // Constructor from dict
 
@@ -88,6 +93,7 @@ public:
         const dictionary coeffDict_;
 
         PtrList<PtrList<AbInitioMatrix>> AImatrixs_;
+
 
 public:
 
