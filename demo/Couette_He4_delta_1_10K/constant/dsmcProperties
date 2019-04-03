@@ -38,9 +38,13 @@ BinaryCollisionModel            AbInitio;
 
 AbInitioCoeffs
 {
-    deflectionAngleTableFileName    "mmc2.csv";
-    numRows                         800;    
-    numColumns                      100;
+    He-He
+    {
+        deflectionAngleCosinTableFileName    "mmc2.csv";
+        numRows                         800;
+        numColumns                      100;
+        G                               400.0;
+    }
 }
 
 // Collision Partner Selection Model
