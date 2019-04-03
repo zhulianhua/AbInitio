@@ -1,0 +1,40 @@
+# An archer job script 
+#PBS -N TEST
+#PBS -A [archer project id]
+#PBS -l select=1
+#PBS -l walltime=2:00:00
+#PBS -m abe
+#PBS -M xxx@gmail.com
+
+# Switch to current working directory
+export PBS_O_WORKDIR=$(readlink -f $PBS_O_WORKDIR)
+cd $PBS_O_WORKDIR
+module swap PrgEnv-cray PrgEnv-gnu
+export CRAYPE_LINK_TYPE=dynamic
+source $LHOME/OpenFOAM/OpenFOAM-2.4.0-MNF/etc/bashrc
+
+# transident stage
+cp system/controlDict.t system/controlDict
+sed -i "s/put off/put on/" system/fieldPropertiesDict;
+sed -i "s/Runs on/Runs off/" system/fieldPropertiesDict;
+
+blockMesh
+dsmcInitialise
+decomposePar
+aprun -n 48 dsmcFoamPlus -parallel  > log.trans
+
+# steady stage
+cp system/controlDict.s system/controlDict
+sed -i "s/put on/put off/" system/fieldPropertiesDict;
+sed -i "s/Runs off/Runs on/" system/fieldPropertiesDict;
+aprun -n 48 dsmcFoamPlus -parallel  > log.steady
+
+source $LHOME/OpenFOAM/OpenFOAM-4.1/etc/bashrc
+reconstructPar -latestTime -noLagrangian
+
+postProcess -func "components(UMean_He)" -latestTime
+postProcess -func singleGraph -latestTime
+
+cp postProcessing/singleGraph/`foamListTimes -latestTime|tail -n 1`/*.xy data.xy
+
+rm -rf processor*

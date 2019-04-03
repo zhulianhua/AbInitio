@@ -1,0 +1,81 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  1.6                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      dsmcProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+
+// General Properties
+// ~~~~~~~~~~~~~~~~~~
+
+nEquivalentParticles            30.302713;
+chargedParticles                false;
+adsorption                      false;
+
+
+// Axisymmetric Properties
+// ~~~~~~~~~~~~~~~~~~
+
+axisymmetricSimulation      false;
+
+
+
+// Binary Collision Model
+// ~~~~~~~~~~~~~~~~~~~~~~
+
+BinaryCollisionModel            AbInitio;
+
+AbInitioCoeffs
+{
+    deflectionAngleTableFileName    "mmc2.csv";
+    numRows                         800;    
+    numColumns                      100;
+}
+
+// Collision Partner Selection Model
+// ~~~~~~~~~~~~~~~~~~~~~~
+
+collisionPartnerSelectionModel   		 noTimeCounter;
+
+// Molecular species
+// ~~~~~~~~~~~~~~~~~
+
+typeIdList                      (He);
+
+moleculeProperties
+
+{
+    He
+    {
+        mass                                    6.646477e-27;
+        diameter                                2.33e-10;
+        rotationalDegreesOfFreedom              0;
+        vibrationalModes                        0;
+        omega                                   0.66;
+        alpha                                   1.0;
+        characteristicVibrationalTemperature    ();
+        dissociationTemperature                 ();
+        ionisationTemperature                   0;
+        charDissQuantumLevel                    ();
+        Zref                                    ();
+        referenceTempForZref                    ();
+        charge                                  0;
+        numberOfElectronicLevels                1;
+        electronicEnergyList                    (0);
+        degeneracyList                          (1);
+    } 
+}
+
+
+// ************************************************************************* //

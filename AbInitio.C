@@ -100,7 +100,7 @@ Foam::AbInitio::AbInitioMatrix::AbInitioMatrix
                  readScalar(IStringStream(splitted[i])());
         }
 
-        // last by 1 column is deflection angles
+        // last by 1 column is total cross section in unit of 1e-20 m^2
         sigmaTtable_[lines] = readScalar(IStringStream(splitted[numColumns_])())*1e-20;
 
         // next line ready
