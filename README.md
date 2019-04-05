@@ -2,18 +2,18 @@
 
 ### What it is for?
 
-This project implements the _ab initio_ potentials based binary-collision model in the dsmcFoamPlus and dsmcFoam (in the future ?) solver. 
+This project implements the _ab initio_ potential based binary-collision model in the dsmcFoamPlus and dsmcFoam (in the future ?) solver. 
 
-The _ab initio_ potential based direct Monte Carlo (DSMC) is introduced in Ref. [1,2] etc.
+The _ab initio_ potential based direct Monte Carlo (DSMC) is introduced in Ref. [1, 2] etc.
 
-Currently,both the classical and quantum potentials for the single-component <sup>3</sup>He, <sup>4</sup>He, Ne gas molecular interactions are avaiable.
-For mixtures, the quantum and classical potentials for the <sup>4</sup>He-Ne are avaialbe.
+Currently, both the classical and quantum potentials for the single-component <sup>3</sup>He, <sup>4</sup>He, Ne gas molecular interactions are avaiable.
+For mixtures, the quantum and classical potentials for the <sup>4</sup>He-Ne collision are also avaialbe.
 
 ### How to compile it?
 
 NOTE: Require to install the [OpenFOAM-2.4.0-MNF](https://github.com/MicroNanoFlows/OpenFOAM-2.4.0-MNF) first.
 
-This code should be compilerd to an user library by typein
+This code should be compilerd to a user library by typein
 
 ```bash
 wmake
@@ -24,7 +24,7 @@ in the project directory.
 ### How to use it?
 
 ####  Step 1: change system/controlDict
- Firstly, add the following user defined library entry to the `system/controlDict` so the dsmcFoam solver can dynamically load the library compiled above.
+ Firstly, add the following user defined library entry to the `system/controlDict`, so the dsmcFoam solver can dynamically load the library compiled above.
 
 ```txt
 libs ("libAIdsmcCollision.so");
@@ -77,13 +77,13 @@ The files used should be provided in the `constant` directory of the dsmcFoam ca
 |-------------|-------|---------|---|---------|
 |  `xiHe3.csv` | 900 | 100 | 400.0  |   Quantum potential of <sup>3</sup>He-<sup>3</sup>He collision, valid up to tempeature of 15,000K, provided in Ref. [2] |
 |  `xiHe4.csv` | 900 | 100 | 400.0  |   Quantum potential of <sup>4</sup>He-<sup>4</sup>He collision, valid up to tempeature of 15,000K, provided in Ref. [2] |
-|  `xiNe.csv`  | 900 | 100 | 200.0  |   Quantum potential of <sup>4</sup>He-Ne collision, valid up to tempeature of 15,000K, , provided in Ref. [2]|
-|  `xiHe4-Ne.csv` | 800 | 100 | 400.0  |   Quantum potential of <sup>4</sup>He-<sup>4</sup>He collision, valid up to tempeature of 15,000K, provided by Professor Felix Sharipov |
-|  `mmc1.csv` | 800 | 100 | 400.0  |   Quantum potential of the <sup>3</sup>He that is used and given in Ref. [1], valid in the tempeature of range of 1K to 3,000K. Deprecated since we have  `xiHe3_QU.csv`.|
-|  `mmc2.csv` | 800 | 100 | 400.0  |   Quantum potential of the <sup>4</sup>He that is used and given in Ref. [1], valid in the tempeature of range of 1K to 3,000K. Deprecated since we have  `xiHe4_QU.csv`.|
-|  `xiHe4_CL.csv` | 800 | 100 | 200.0  |   Classical potential of <sup>4</sup>He-<sup>4</sup>He collision, provided by Professor Felix Sharipov. Deprecated since we already have the quantum potential. Used only for comparison with its quantum conterpart.|
+|  `xiNe.csv`  | 900 | 100 | 200.0  |   Quantum potential of Ne-Ne collision, valid up to tempeature of 15,000K, , provided in Ref. [2]|
+|  `xiHe4-Ne.csv` | 800 | 100 | 400.0  |   Quantum potential of <sup>4</sup>He-Ne collision, valid up to tempeature of 15,000K, provided by Professor Felix Sharipov |
+|  `mmc1.csv` | 800 | 100 | 400.0  |   Quantum potential of the <sup>3</sup>He given in Ref. [1], valid in the tempeature of range of 1K to 3,000K. Deprecated since we have the more accurate `xiHe3.csv`.|
+|  `mmc2.csv` | 800 | 100 | 400.0  |   Quantum potential of the <sup>4</sup>He given in Ref. [1], valid in the tempeature of range of 1K to 3,000K. Deprecated since we have the more accurate `xiHe4.csv`.|
+|  `xiHe4_CL.csv` | 800 | 100 | 200.0  |   Classical potential of <sup>4</sup>He-<sup>4</sup>He collision, provided by Professor Felix Sharipov. Deprecated since we already have the quantum one. Used only for comparison with its quantum conterpart.|
 |  `xiNe_CL.csv` | 900 | 100 | 400.0  |   Classical potential of Ne-Ne collision, provided by Professor Felix Sharipov. Deprecated since we already have the quantum potential. Used only for comparison with its quantum conterpart.|
-|  `xiHe4-Ne_CL.csv` | 900 | 100 | 400.0  |   Classical potential of <sup>4</sup>He-Ne collision, provided by Professor Felix Sharipov. Deprecated since we already have the quantum potential. Used only for comparison with its quantum conterpart. |
+|  `xiHe4-Ne_CL.csv` | 900 | 100 | 400.0  |   Classical potential of <sup>4</sup>He-Ne collision, provided by Professor Felix Sharipov. Deprecated since we already have the quantum none. Used only for comparison with its quantum conterpart. |
 
 **NOTE**:
 * This collision model will use only the `mass` entry in the `moleculeProperties` dictionary of `constant/dsmcProperties`.
