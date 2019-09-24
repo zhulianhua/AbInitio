@@ -1,7 +1,7 @@
 ## Quantum interatomic scattering in dsmcFoamPlus
 
 ### Project Homepage
-[AbInitio](https://github.com/zhulianhua/AbInitio/)
+[AbInitio on GitHub](https://github.com/zhulianhua/AbInitio/)
 
 ### What it is for?
 
