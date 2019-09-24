@@ -1,5 +1,8 @@
 ## Quantum interatomic scattering in dsmcFoamPlus
 
+### Project Homepage
+[AbInitio](https://github.com/zhulianhua/AbInitio/)
+
 ### What it is for?
 
 This project implements the _ab initio_ potential based collision model in the dsmcFoamPlus and dsmcFoam (in the future ?) solver. 
